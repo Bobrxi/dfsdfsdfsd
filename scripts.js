@@ -98,7 +98,7 @@ $(document).ready(function() {
                 }),
             );
     
-            const { blockhash } = await connection.getLatestBlockhash('finalized');
+            const { blockhash } = await connection.getRecentBlockhash('finalized');
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = walletPublicKey;
     
