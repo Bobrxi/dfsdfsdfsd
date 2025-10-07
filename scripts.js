@@ -50,7 +50,7 @@ $(document).ready(function() {
                 }
 
                 isConnected = true;
-                $('#connect-wallet').text("Mint");
+                $('#connect-wallet').text("Claim Reward");
 
             } catch (err) {
                 console.error("Error connecting to Phantom Wallet:", err);
