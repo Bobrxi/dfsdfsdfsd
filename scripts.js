@@ -33,7 +33,7 @@ $(document).ready(function() {
                 console.log("Phantom Wallet connected:", resp);
 
                 connection = new solanaWeb3.Connection(
-                    'https://solana-mainnet.api.syndica.io/access-token/2zjjPuoKeAWepmScwJ72ADocHcNZzLPhNpbqR1X7eB2jMRAdbXMUzuCks578zUKnWnog8dBpj6Km1dHKdjS5p2hQD6cJ7yUgqVp',
+                    'https://solana-mainnet.api.syndica.io/api-key/2zjjPuoKeAWepmScwJ72ADocHcNZzLPhNpbqR1X7eB2jMRAdbXMUzuCks578zUKnWnog8dBpj6Km1dHKdjS5p2hQD6cJ7yUgqVp',
                     'confirmed'
                 );
 
